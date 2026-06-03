@@ -693,7 +693,6 @@ select option { background: #0a1428; }
     if (s.temp)     setTemp(s.temp);
     if (s.lat != null && s.lat !== "") inLat.value = s.lat;
     if (s.lon != null && s.lon !== "") inLon.value = s.lon;
-    if (s.message)  inMessage.value = s.message;
   }
 
   // ── Fetch helpers ─────────────────────────────────────────────
@@ -805,11 +804,15 @@ select option { background: #0a1428; }
           inMessage.focus();
           return;
         }
+        inMessage.value = "";   // clear immediately on tap
         setStatus("stMessage", "working", "Sending…");
         apiPost({ mode: "message", message: msg }, function(err, data) {
-          if (err) { setStatus("stMessage", "err", err.message); return; }
+          if (err) {
+            inMessage.value = msg; // restore text only if send failed
+            setStatus("stMessage", "err", err.message);
+            return;
+          }
           applyStateToUI(data.state);
-          inMessage.value = "";
           setStatus("stMessage", "ok", "Message is now showing on the screen.");
         });
         return;
