@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#020510">
+<title>Airspace Live — Controller</title>
+<style>
+/* ================================================================
+   AIRSPACE LIVE — Controller · Build 12
+   Mobile-first cyberpunk remote control
+   ================================================================ */
+
+:root {
+  --bg:      #020510;
+  --txt:     #e8f4ff;
+  --muted:   #4a7090;
+  --dim:     #2a4060;
+  --accent:  #00d4ff;
+  --violet:  #7b2fff;
+  --mint:    #00ff9d;
+  --magenta: #ff3cac;
+  --green:   #00ff9d;
+  --red:     #ff4455;
+  --glass-bg:     rgba(2,7,22,0.92);
+  --glass-border: rgba(0,212,255,0.28);
+  --glass-dim:    rgba(0,212,255,0.12);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { height:100%; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+               Inter, system-ui, Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  padding-left:  env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── Aurora background (subtle) ── */
+.aurora-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.aurora-bg::before {
+  content: "";
+  position: absolute; inset: -50%;
+  background:
+    radial-gradient(ellipse 80% 55% at 18% 22%, rgba(0,212,255,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 70% at 82% 15%, rgba(123,47,255,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 40% at 50% 88%, rgba(0,255,157,0.07) 0%, transparent 52%),
+    radial-gradient(ellipse 35% 50% at 92% 55%, rgba(255,60,172,0.07) 0%, transparent 48%);
+  animation: aurora 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes aurora {
+  0%   { transform: translate(0,0); }
+  50%  { transform: translate(2%,3%); }
+  100% { transform: translate(-2%,-2%); }
+}
+
+/* ── Layout ── */
+.container {
+  position: relative; z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 14px 24px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 2px 14px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 14px;
+}
+.header-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0,212,255,0.5);
+}
+.header-conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.conn-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: background 0.4s, box-shadow 0.4s;
+  flex-shrink: 0;
+}
+.conn-dot.online  { background: var(--green); box-shadow: 0 0 7px var(--green); }
+.conn-dot.offline { background: var(--red);   box-shadow: 0 0 5px var(--red); }
+.conn-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 7px;
+  padding: 14px 15px;
+  margin-bottom: 10px;
+  position: relative;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--accent) 0%, rgba(0,212,255,0.12) 60%, transparent 100%);
+  border-radius: 7px 7px 0 0;
+}
+.card-title {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* ── Current mode bar ── */
+.mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.13);
+  border-radius: 6px;
+  padding: 9px 13px;
+  margin-bottom: 10px;
+}
+.mode-bar-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.mode-bar-value {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mode-bar-screen {
+  font-size: 9px;
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* ── Mode button grid ── */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.mode-btn {
+  background: rgba(0,212,255,0.03);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  min-height: 62px;
+  padding: 10px 6px 9px;
+  text-align: center;
+  text-transform: uppercase;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation;
+}
+.mode-btn .icon { font-size: 18px; line-height: 1; }
+.mode-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  background: rgba(0,212,255,0.08);
+}
+.mode-btn.active {
+  background: rgba(0,212,255,0.10);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(0,212,255,0.20), inset 0 0 6px rgba(0,212,255,0.05);
+}
+.mode-btn.demo-style.active {
+  background: rgba(123,47,255,0.10);
+  border-color: var(--violet);
+  color: var(--violet);
+  box-shadow: 0 0 10px rgba(123,47,255,0.20), inset 0 0 6px rgba(123,47,255,0.05);
+}
+.mode-btn.msg-style.active {
+  background: rgba(0,255,157,0.08);
+  border-color: var(--mint);
+  color: var(--mint);
+  box-shadow: 0 0 10px rgba(0,255,157,0.18), inset 0 0 6px rgba(0,255,157,0.05);
+}
+.mode-btn:disabled { opacity: 0.32; cursor: default; transform: none; }
+
+/* ── Inputs ── */
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field-row { display: flex; gap: 8px; }
+.field-row .field { flex: 1; }
+label {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+input[type="text"],
+input[type="number"],
+input[type="password"],
+select,
+textarea {
+  background: rgba(0,0,0,0.40);
+  border: 1px solid rgba(0,212,255,0.14);
+  border-radius: 5px;
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  padding: 10px 11px;
+  transition: border-color 0.15s;
+  width: 100%;
+  -webkit-appearance: none;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { min-height: 86px; resize: vertical; line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--dim); }
+select { color: var(--txt); }
+select option { background: #0a1428; }
+
+/* ── Buttons ── */
+.btn {
+  background: rgba(0,212,255,0.05);
+  border: 1px solid rgba(0,212,255,0.20);
+  border-radius: 6px;
+  color: var(--txt);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  min-height: 46px;
+  padding: 10px 14px;
+  text-align: center;
+  text-transform: uppercase;
+  transition: filter 0.12s, transform 0.10s;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation;
+}
+.btn:active:not(:disabled) { transform: scale(0.97); filter: brightness(1.15); }
+.btn:disabled { opacity: 0.32; cursor: default; transform: none; }
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #020510;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(0,212,255,0.30);
+}
+.btn.danger {
+  border-color: rgba(255,60,172,0.28);
+  color: var(--muted);
+}
+.btn-row { display: flex; gap: 8px; margin-top: 8px; }
+.btn-row .btn { flex: 1; }
+.btn-row:first-child { margin-top: 0; }
+
+/* ── Toggle groups (units/temp) ── */
+.toggle-group { display: flex; gap: 6px; }
+.toggle-btn {
+  flex: 1;
+  background: rgba(0,212,255,0.03);
+  border: 1px solid rgba(0,212,255,0.13);
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  min-height: 38px;
+  text-align: center;
+  text-transform: uppercase;
+  transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation;
+}
+.toggle-btn.active {
+  background: rgba(0,212,255,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.toggle-btn:active { transform: scale(0.95); }
+
+/* ── Status messages ── */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  min-height: 18px;
+  margin-top: 8px;
+  line-height: 1.4;
+  transition: color 0.2s;
+}
+.status::before {
+  content: "";
+  display: block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.status:empty { min-height: 0; margin-top: 0; }
+.status:empty::before { display: none; }
+.status.ok      { color: var(--mint); }
+.status.err     { color: var(--red); }
+.status.working { color: var(--muted); }
+
+/* ── Accordion ── */
+.accordion-hd {
+  background: none;
+  border: none;
+  border-top: 1px solid var(--glass-dim);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  padding: 10px 0 0;
+  text-align: left;
+  text-transform: uppercase;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.accordion-body { display: none; padding-top: 10px; }
+.accordion-body.open { display: block; }
+
+/* ── Connect card inputs ── */
+.connect-fields { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.connect-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* ── Divider ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--glass-dim);
+  margin: 12px 0;
+}
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  padding: 18px 0 4px;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<div class="container">
+
+  <!-- ═══ HEADER ══════════════════════════════════════════════════ -->
+  <div class="header">
+    <div class="header-title">✈ Airspace Live</div>
+    <div class="header-conn">
+      <span class="conn-dot" id="connDot"></span>
+      <span class="conn-label" id="connLabel">Not connected</span>
+    </div>
+  </div>
+
+  <!-- ═══ CONNECTION ══════════════════════════════════════════════ -->
+  <div class="card" id="connectCard">
+    <div class="card-title">Connection</div>
+    <div class="connect-row">
+      <div class="field">
+        <label>Screen ID</label>
+        <input type="text" id="inScreenId" value="main-wall"
+               autocomplete="off" autocorrect="off" spellcheck="false"
+               autocapitalize="none" placeholder="main-wall">
+      </div>
+      <div class="field">
+        <label>Controller PIN</label>
+        <input type="password" id="inToken"
+               autocomplete="current-password" placeholder="PIN">
+      </div>
+    </div>
+    <button class="btn primary" id="btnConnect">Connect</button>
+    <div class="status" id="stConnect"></div>
+  </div>
+
+  <!-- ═══ CURRENT MODE BAR ════════════════════════════════════════ -->
+  <div class="mode-bar" id="modeBar" style="display:none">
+    <span class="mode-bar-label">Screen</span>
+    <span class="mode-bar-value" id="modeBarValue">—</span>
+    <span class="mode-bar-screen" id="modeBarScreen"></span>
+  </div>
+
+  <!-- ═══ MODE ════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Mode</div>
+    <div class="mode-grid">
+
+      <button class="mode-btn" data-mode="flight" id="mbFlight" disabled>
+        <span class="icon">✈</span>Flight Wall
+      </button>
+      <button class="mode-btn" data-mode="idle" id="mbIdle" disabled>
+        <span class="icon">◑</span>Idle
+      </button>
+      <button class="mode-btn" data-mode="weather" id="mbWeather" disabled>
+        <span class="icon">⛅</span>Weather
+      </button>
+      <button class="mode-btn" data-mode="clock" id="mbClock" disabled>
+        <span class="icon">⏱</span>Clock
+      </button>
+      <button class="mode-btn demo-style" data-mode="demo-flight" id="mbDemoFlight" disabled>
+        <span class="icon">🛫</span>Demo Flight
+      </button>
+      <button class="mode-btn demo-style" data-mode="demo-idle" id="mbDemoIdle" disabled>
+        <span class="icon">🌙</span>Demo Idle
+      </button>
+
+    </div>
+    <div class="status" id="stMode"></div>
+  </div>
+
+  <!-- ═══ MESSAGE ═════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Message</div>
+    <div class="field">
+      <label>Text to display on screen</label>
+      <textarea id="inMessage"
+                placeholder="Type your message…&#10;It will appear full-screen on the wall display."
+                maxlength="280"></textarea>
+    </div>
+    <button class="mode-btn msg-style" data-mode="message" id="mbMessage"
+            style="width:100%;min-height:50px;flex-direction:row;gap:8px;border-radius:6px"
+            disabled>
+      <span class="icon">💬</span>
+      <span>Send Message to Screen</span>
+    </button>
+    <div class="status" id="stMessage"></div>
+  </div>
+
+  <!-- ═══ SETTINGS ════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Settings</div>
+
+    <div class="field-row">
+      <div class="field" style="flex:0 0 80px">
+        <label>Radius</label>
+        <input type="number" id="inRadius" value="5" min="1" max="250" step="1" class="num">
+      </div>
+      <div class="field">
+        <label>Distance</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-unit="mi" id="tMi">mi</button>
+          <button class="toggle-btn"        data-unit="km" id="tKm">km</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Temp</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-temp="f" id="tF">°F</button>
+          <button class="toggle-btn"        data-temp="c" id="tC">°C</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="accordion-hd" id="locToggle">
+      Override location <span id="locArrow">▾</span>
+    </button>
+    <div class="accordion-body" id="locBody">
+      <div class="field-row" style="margin-top:2px">
+        <div class="field">
+          <label>Latitude</label>
+          <input type="number" id="inLat" step="0.0001" placeholder="e.g. 26.2026" class="num">
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="number" id="inLon" step="0.0001" placeholder="e.g. -80.0939" class="num">
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn primary" id="btnSettings" disabled>Apply Settings</button>
+    </div>
+    <div class="status" id="stSettings"></div>
+  </div>
+
+  <!-- ═══ ACTIONS ══════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Actions</div>
+    <div class="btn-row">
+      <button class="btn" id="btnRefresh"      disabled>↺ Refresh Screen</button>
+      <button class="btn" id="btnReturnFlight" disabled>✈ Return to Flight</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn danger" id="btnResetDemo" disabled>✕ Reset Demo</button>
+    </div>
+    <div class="status" id="stActions"></div>
+  </div>
+
+  <div class="footer">Airspace Live · Controller · build 12</div>
+
+</div><!-- /container -->
+
+<script>
+(function () {
+  "use strict";
+
+  var LS_ID    = "airspace.remote.screenId";
+  var LS_TOKEN = "airspace.remote.controllerToken";
+
+  var screenId = "";
+  var token    = "";
+  var state    = null;
+  var connected = false;
+  var pollTid   = null;
+
+  var selectedUnit = "mi";
+  var selectedTemp = "f";
+
+  // ── DOM refs ──────────────────────────────────────────────────
+  function $$(id) { return document.getElementById(id); }
+
+  var connDot        = $$("connDot");
+  var connLabel      = $$("connLabel");
+  var modeBar        = $$("modeBar");
+  var modeBarValue   = $$("modeBarValue");
+  var modeBarScreen  = $$("modeBarScreen");
+  var inScreenId     = $$("inScreenId");
+  var inToken        = $$("inToken");
+  var inMessage      = $$("inMessage");
+  var inRadius       = $$("inRadius");
+  var inLat          = $$("inLat");
+  var inLon          = $$("inLon");
+
+  // ── Restore saved credentials ─────────────────────────────────
+  try {
+    screenId = localStorage.getItem(LS_ID)    || "main-wall";
+    token    = localStorage.getItem(LS_TOKEN) || "";
+  } catch (e) {}
+
+  inScreenId.value = screenId;
+  inToken.value    = token;
+
+  // ── Unit / temp toggles ───────────────────────────────────────
+  function setUnit(u) {
+    selectedUnit = u;
+    $$("tMi").classList.toggle("active", u === "mi");
+    $$("tKm").classList.toggle("active", u === "km");
+  }
+  function setTemp(t) {
+    selectedTemp = t;
+    $$("tF").classList.toggle("active", t === "f");
+    $$("tC").classList.toggle("active", t === "c");
+  }
+  setUnit("mi"); setTemp("f");
+
+  $$("tMi").onclick = function() { setUnit("mi"); };
+  $$("tKm").onclick = function() { setUnit("km"); };
+  $$("tF").onclick  = function() { setTemp("f"); };
+  $$("tC").onclick  = function() { setTemp("c"); };
+
+  // ── Accordion ─────────────────────────────────────────────────
+  $$("locToggle").onclick = function() {
+    var b = $$("locBody");
+    var open = b.classList.toggle("open");
+    $$("locArrow").textContent = open ? "▴" : "▾";
+  };
+
+  // ── Status helper ─────────────────────────────────────────────
+  function setStatus(id, cls, msg) {
+    var el = $$(id);
+    if (!el) return;
+    el.className = "status" + (cls ? " " + cls : "");
+    el.textContent = msg || "";
+    if (msg && cls !== "working") {
+      var snap = msg;
+      setTimeout(function() {
+        if (el.textContent === snap && cls !== "working") el.textContent = "";
+      }, 5000);
+    }
+  }
+
+  // ── Connection dot helper ─────────────────────────────────────
+  function setConnState(online, label) {
+    connDot.className   = "conn-dot" + (online ? " online" : (label ? " offline" : ""));
+    connLabel.textContent = label || "Not connected";
+    connected = !!online;
+  }
+
+  // ── Enable / disable controls ─────────────────────────────────
+  var CTRL_IDS = ["mbFlight","mbIdle","mbWeather","mbClock","mbDemoFlight","mbDemoIdle",
+                  "mbMessage","btnSettings","btnRefresh","btnReturnFlight","btnResetDemo"];
+
+  function enableAll(on) {
+    CTRL_IDS.forEach(function(id) {
+      var el = $$(id);
+      if (el) el.disabled = !on;
+    });
+  }
+
+  // ── Mode display ──────────────────────────────────────────────
+  var MODE_NAMES = {
+    "flight":      "Flight Wall",
+    "idle":        "Idle",
+    "weather":     "Weather",
+    "clock":       "Clock",
+    "message":     "Message",
+    "demo-flight": "Demo Flight",
+    "demo-idle":   "Demo Idle",
+    "demo":        "Demo"
+  };
+
+  function applyStateToUI(s) {
+    if (!s) return;
+    state = s;
+    modeBar.style.display = "";
+    modeBarValue.textContent  = MODE_NAMES[s.mode] || s.mode || "—";
+    modeBarScreen.textContent = screenId;
+
+    // Highlight active mode button
+    document.querySelectorAll(".mode-btn").forEach(function(btn) {
+      btn.classList.toggle("active", btn.dataset.mode === s.mode);
+    });
+
+    // Populate settings
+    if (s.radiusMi) inRadius.value = s.radiusMi;
+    if (s.dist)     setUnit(s.dist);
+    if (s.temp)     setTemp(s.temp);
+    if (s.lat != null && s.lat !== "") inLat.value = s.lat;
+    if (s.lon != null && s.lon !== "") inLon.value = s.lon;
+  }
+
+  // ── Fetch helpers ─────────────────────────────────────────────
+  function apiGet(cb) {
+    var ctl = new AbortController();
+    var tid = setTimeout(function() { ctl.abort(); }, 6000);
+    fetch("/api/state?screenId=" + encodeURIComponent(screenId), { signal: ctl.signal })
+      .then(function(r) {
+        clearTimeout(tid);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function(data) { cb(null, data); })
+      .catch(function(err) { clearTimeout(tid); cb(err, null); });
+  }
+
+  function apiPost(body, cb) {
+    body.screenId = screenId;
+    body.token    = token;
+    var ctl = new AbortController();
+    var tid = setTimeout(function() { ctl.abort(); }, 8000);
+    fetch("/api/state", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(body),
+      signal:  ctl.signal
+    })
+      .then(function(r) {
+        clearTimeout(tid);
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data.ok) throw new Error(data.error || "Unknown error");
+        cb(null, data);
+      })
+      .catch(function(err) { clearTimeout(tid); cb(err, null); });
+  }
+
+  // ── Connect ───────────────────────────────────────────────────
+  function connect() {
+    var id  = (inScreenId.value || "").trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64) || "main-wall";
+    var tok = (inToken.value    || "").trim();
+
+    screenId = id;
+    token    = tok;
+    inScreenId.value = id;
+
+    try {
+      localStorage.setItem(LS_ID,    screenId);
+      localStorage.setItem(LS_TOKEN, token);
+    } catch(e) {}
+
+    setStatus("stConnect", "working", "Connecting…");
+    $$("btnConnect").disabled = true;
+    enableAll(false);
+    modeBar.style.display = "none";
+
+    apiGet(function(err, data) {
+      $$("btnConnect").disabled = false;
+      if (err) {
+        setConnState(false, "Offline");
+        setStatus("stConnect", "err", "Could not reach the display API. Is the site deployed to Cloudflare?");
+        return;
+      }
+      setConnState(true, "Connected · " + screenId);
+      setStatus("stConnect", "ok", "Connected.");
+      enableAll(true);
+      applyStateToUI(data);
+      startPoll();
+    });
+  }
+
+  $$("btnConnect").onclick = connect;
+
+  // Allow Enter in PIN field to trigger connect
+  inToken.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") connect();
+  });
+
+  // ── Polling (status every 4s) ─────────────────────────────────
+  function startPoll() {
+    if (pollTid) clearInterval(pollTid);
+    pollTid = setInterval(function() {
+      if (!connected) return;
+      apiGet(function(err, data) {
+        if (err) {
+          connDot.className = "conn-dot offline";
+          connLabel.textContent = "Connection lost";
+          return;
+        }
+        connDot.className = "conn-dot online";
+        connLabel.textContent = "Connected · " + screenId;
+        applyStateToUI(data);
+      });
+    }, 4000);
+  }
+
+  // ── Mode buttons ──────────────────────────────────────────────
+  document.querySelectorAll(".mode-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      if (this.disabled || !connected) return;
+      var mode = this.dataset.mode;
+
+      // Message mode requires text
+      if (mode === "message") {
+        var msg = (inMessage.value || "").trim();
+        if (!msg) {
+          setStatus("stMessage", "err", "Type a message first, then tap this button.");
+          inMessage.focus();
+          return;
+        }
+        setStatus("stMessage", "working", "Sending…");
+        apiPost({ mode: "message", message: msg }, function(err, data) {
+          if (err) { setStatus("stMessage", "err", err.message); return; }
+          applyStateToUI(data.state);
+          inMessage.value = "";
+          setStatus("stMessage", "ok", "Message is now showing on the screen.");
+        });
+        return;
+      }
+
+      setStatus("stMode", "working", "Switching to " + (MODE_NAMES[mode] || mode) + "…");
+      apiPost({ mode: mode }, function(err, data) {
+        if (err) { setStatus("stMode", "err", err.message); return; }
+        applyStateToUI(data.state);
+        setStatus("stMode", "ok", "Switched to " + (MODE_NAMES[mode] || mode) + ".");
+      });
+    });
+  });
+
+  // ── Settings ─────────────────────────────────────────────────
+  $$("btnSettings").onclick = function() {
+    if (!connected) return;
+    var radius = parseFloat(inRadius.value);
+    if (isNaN(radius) || radius < 1) {
+      setStatus("stSettings", "err", "Radius must be at least 1.");
+      return;
+    }
+    var update = { radiusMi: radius, dist: selectedUnit, temp: selectedTemp };
+    var lat = inLat.value !== "" ? parseFloat(inLat.value) : null;
+    var lon = inLon.value !== "" ? parseFloat(inLon.value) : null;
+    if (lat !== null && !isNaN(lat)) update.lat = lat;
+    if (lon !== null && !isNaN(lon)) update.lon = lon;
+
+    setStatus("stSettings", "working", "Applying…");
+    apiPost(update, function(err, data) {
+      if (err) { setStatus("stSettings", "err", err.message); return; }
+      applyStateToUI(data.state);
+      setStatus("stSettings", "ok", "Settings applied to screen.");
+    });
+  };
+
+  // ── Refresh ───────────────────────────────────────────────────
+  $$("btnRefresh").onclick = function() {
+    if (!connected) return;
+    setStatus("stActions", "working", "Refreshing…");
+    apiPost({ refreshToken: Date.now() }, function(err) {
+      if (err) { setStatus("stActions", "err", err.message); return; }
+      setStatus("stActions", "ok", "Screen will refresh aircraft data.");
+    });
+  };
+
+  // ── Return to flight ──────────────────────────────────────────
+  $$("btnReturnFlight").onclick = function() {
+    if (!connected) return;
+    setStatus("stActions", "working", "Returning to live flight…");
+    apiPost({ mode: "flight", demo: false }, function(err, data) {
+      if (err) { setStatus("stActions", "err", err.message); return; }
+      applyStateToUI(data.state);
+      setStatus("stActions", "ok", "Screen returning to live flight wall.");
+    });
+  };
+
+  // ── Reset demo ────────────────────────────────────────────────
+  $$("btnResetDemo").onclick = function() {
+    if (!connected) return;
+    if (!confirm("Exit demo mode and return to live flight tracking?")) return;
+    setStatus("stActions", "working", "Resetting…");
+    apiPost({ mode: "flight", demo: false }, function(err, data) {
+      if (err) { setStatus("stActions", "err", err.message); return; }
+      applyStateToUI(data.state);
+      setStatus("stActions", "ok", "Demo reset. Screen returning to live view.");
+    });
+  };
+
+  // ── Auto-connect if credentials stored ───────────────────────
+  if (screenId && token) {
+    connect();
+  }
+
+})();
+</script>
+</body>
+</html>
