@@ -308,12 +308,19 @@ body {
   align-items: center;
   justify-content: flex-start;
   flex-shrink: 0;
+  background: rgba(2, 7, 22, 0.62);
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  border-radius: 4px;
+  padding: 0.8vmin 1.4vmin;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .logo-wrap img {
   height: 100%;
   max-width: 26vmin;
   object-fit: contain;
   object-position: left center;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.95)) drop-shadow(0 0 6px rgba(0,0,0,0.80));
 }
 .logo-mono {
   height: 8.5vmin; width: 8.5vmin;
@@ -1022,6 +1029,131 @@ body {
 .cfg-welcome span   { font-size: 13px; color: var(--muted); }
 
 /* ================================================================
+   CLOCK SCENE — dedicated full-screen clock
+   ================================================================ */
+.clock-scene-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+}
+.clock-scene-time {
+  font-size: 30vmin;
+  font-weight: 800;
+  line-height: 0.80;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow:
+    0 0 14vmin rgba(0,212,255,0.75),
+    0 0 7vmin  rgba(0,212,255,0.55),
+    0 0 2vmin  rgba(0,212,255,0.35),
+    0 0 0.5vmin rgba(0,212,255,0.20);
+  animation: neon-flicker 14s step-end infinite;
+}
+.clock-scene-time .ampm {
+  font-size: 5vmin;
+  color: var(--muted);
+  font-weight: 600;
+  margin-left: 1vmin;
+  letter-spacing: 0.08em;
+  vertical-align: super;
+}
+.clock-scene-date {
+  font-size: 3.2vmin;
+  color: var(--muted);
+  margin-top: 2vmin;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* ================================================================
+   WEATHER SCENE — dedicated full-screen weather
+   ================================================================ */
+.weather-scene-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5vmin;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+}
+.ws-current {
+  display: flex;
+  align-items: center;
+  gap: 3.5vmin;
+}
+.ws-icon {
+  font-size: 14vmin;
+  line-height: 1;
+  color: var(--accent);
+  filter: drop-shadow(0 0 2vmin var(--accent));
+}
+.ws-info { display: flex; flex-direction: column; }
+.ws-temp {
+  font-size: 18vmin;
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  text-shadow:
+    0 0 8vmin rgba(0,212,255,0.60),
+    0 0 3vmin rgba(0,212,255,0.35),
+    0 0 1vmin rgba(0,212,255,0.18);
+}
+.ws-desc {
+  font-size: 2.8vmin;
+  font-weight: 600;
+  margin-top: 1vmin;
+  color: var(--txt);
+  letter-spacing: 0.02em;
+}
+.ws-meta {
+  font-size: 1.8vmin;
+  color: var(--muted);
+  margin-top: 0.8vmin;
+  font-weight: 500;
+  line-height: 1.7;
+}
+.ws-forecast { display: flex; gap: 2vmin; }
+.ws-fc {
+  width: 14vmin;
+  background: rgba(0,212,255,0.03);
+  border: 1px solid var(--glass-dim);
+  border-radius: 4px;
+  padding: 1.8vmin 1.2vmin;
+  text-align: center;
+  position: relative;
+}
+.ws-fc::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+  opacity: 0.4;
+}
+.ws-fc .ws-fc-d { font-size: 1.4vmin; color: var(--muted); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.4vmin; }
+.ws-fc .ws-fc-i { font-size: 4vmin; margin: 0.6vmin 0; color: var(--accent); line-height: 1; }
+.ws-fc .ws-fc-hi { font-size: 2.2vmin; font-weight: 700; }
+.ws-fc .ws-fc-lo { font-size: 1.8vmin; color: var(--dim); font-weight: 500; }
+.ws-loc {
+  font-size: 1.5vmin;
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+/* ================================================================
    MESSAGE SCENE — Build 12
    ================================================================ */
 .message-inner {
@@ -1216,6 +1348,55 @@ body {
     </div>
   </section>
 
+  <!-- ═══ CLOCK SCENE ═════════════════════════════════════════ -->
+  <section id="clock-scene" class="scene">
+    <div class="topbar">
+      <div class="bar-clock" id="ckTopClock"></div>
+      <div class="bar-title" id="ckTitle">—</div>
+      <div class="bar-right">
+        <div class="live-pill"><span class="dot"></span><span>Live</span></div>
+      </div>
+    </div>
+    <div class="clock-scene-inner">
+      <div class="clock-scene-time num">
+        <span id="ckTime">--:--</span><span class="ampm" id="ckAmpm"></span>
+      </div>
+      <div class="clock-scene-date" id="ckDate">—</div>
+    </div>
+    <div class="idle-bottom">
+      <div class="live-badge"><span class="bdot"></span><span>Live</span></div>
+      <div class="searching-txt" id="ckSearching">Actively searching for aircraft nearby</div>
+      <div class="radar-wrap">
+        <div class="radar-dots"></div>
+        <div class="radar-line"></div>
+        <span class="radar-plane">&#9992;</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ WEATHER SCENE ════════════════════════════════════════ -->
+  <section id="weather-scene" class="scene">
+    <div class="topbar">
+      <div class="bar-clock" id="wsClock"></div>
+      <div class="bar-title">Weather</div>
+      <div class="bar-right">
+        <div class="live-pill"><span class="dot"></span><span>Live</span></div>
+      </div>
+    </div>
+    <div class="weather-scene-inner">
+      <div class="ws-current">
+        <div class="ws-icon" id="wsIc">☁</div>
+        <div class="ws-info">
+          <div class="ws-temp num" id="wsTemp">—</div>
+          <div class="ws-desc"     id="wsDesc">—</div>
+          <div class="ws-meta"     id="wsMeta"></div>
+        </div>
+      </div>
+      <div class="ws-forecast" id="wsForecast"></div>
+      <div class="ws-loc" id="wsLoc"></div>
+    </div>
+  </section>
+
   <!-- ═══ MESSAGE SCENE ════════════════════════════════════════ -->
   <section id="message" class="scene">
     <div class="topbar">
@@ -1355,6 +1536,10 @@ body {
   var remoteLastRefreshToken = 0;
   var remoteAbortCtl         = null;
 
+  // Mode lock — when true, cycle() will not override the current scene with flight.
+  // Set by controller/setMode for idle/weather/clock/message. Cleared by flight/refresh.
+  var modeLocked = false;
+
   var cfg = loadCfg();
 
   var demo        = false;
@@ -1418,8 +1603,9 @@ body {
 
   function updateTitle() {
     var t = tracked.toLocaleString() + ' <span class="hi">aircraft tracked</span>';
-    if ($("fTitle")) $("fTitle").innerHTML = t;
-    if ($("iTitle")) $("iTitle").innerHTML = t;
+    if ($("fTitle"))  $("fTitle").innerHTML  = t;
+    if ($("iTitle"))  $("iTitle").innerHTML  = t;
+    if ($("ckTitle")) $("ckTitle").innerHTML = t;
   }
 
   // Haversine distance in km
@@ -1953,10 +2139,11 @@ body {
 
   function show(which) {
     APP.mode = which;
-    var isIdle = (which === "idle" || which === "weather" || which === "clock");
-    $("flight").classList.toggle("on",  which === "flight");
-    $("idle").classList.toggle("on",    isIdle);
-    $("message").classList.toggle("on", which === "message");
+    $("flight").classList.toggle("on",         which === "flight");
+    $("idle").classList.toggle("on",           which === "idle");
+    $("clock-scene").classList.toggle("on",    which === "clock");
+    $("weather-scene").classList.toggle("on",  which === "weather");
+    $("message").classList.toggle("on",        which === "message");
     if (which === "flight" && map) {
       setTimeout(function () { try { map.invalidateSize(); } catch (e) {} }, 80);
     }
@@ -1965,24 +2152,23 @@ body {
   // Phone controller entry point — called by remote polling and existing UI
   function setMode(mode) {
     if (mode === "flight") {
-      demo = false;
-      lastSeen = Date.now(); // prevent immediate idle-timeout
+      modeLocked = false; demo = false;
+      lastSeen = Date.now();
       if (cfg.lat != null) cycle();
       else show("idle");
     }
-    if (mode === "idle")    { demo = false; show("idle"); }
-    if (mode === "weather") { demo = false; show("weather"); }
-    if (mode === "clock")   { demo = false; show("clock"); }
+    if (mode === "idle")    { modeLocked = true;  demo = false; show("idle"); }
+    if (mode === "weather") { modeLocked = true;  demo = false; renderWeatherScene(); show("weather"); }
+    if (mode === "clock")   { modeLocked = true;  demo = false; updateLoc(); show("clock"); }
     if (mode === "message") {
       var msg = (APP.message || "").trim();
-      if (!msg) return; // refuse to show empty message
-      demo = false;
-      renderMessage(msg);
-      show("message");
+      if (!msg) return;
+      modeLocked = true; demo = false;
+      renderMessage(msg); show("message");
     }
-    if (mode === "demo-flight") { demo = true; runDemo(); }
-    if (mode === "demo-idle")   { demo = true; runDemoIdle(); }
-    if (mode === "demo")        { demo = true; runDemo(); } // backward compat
+    if (mode === "demo-flight") { modeLocked = false; demo = true; runDemo(); }
+    if (mode === "demo-idle")   { modeLocked = true;  demo = true; runDemoIdle(); }
+    if (mode === "demo")        { modeLocked = false; demo = true; runDemo(); }
   }
 
   // ================================================================
@@ -2096,13 +2282,60 @@ body {
     $("clkDate").textContent = d.toLocaleDateString(undefined, {
       weekday: "long", month: "long", day: "numeric"
     });
+    var longDate = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
     var shortDate = d.toLocaleDateString(undefined, {
       weekday: "short", month: "short", day: "numeric"
     }) + "  ·  " + h12 + ":" + mm + " " + ap;
-    var f = $("fClock");
-    if (f) f.textContent = shortDate;
-    var mc = $("mClock");
-    if (mc) mc.textContent = shortDate;
+    var f = $("fClock");  if (f)  f.textContent  = shortDate;
+    var mc = $("mClock"); if (mc) mc.textContent  = shortDate;
+    // Clock scene
+    var ck = $("ckTime");     if (ck)  ck.textContent  = h12 + ":" + mm;
+    var cka = $("ckAmpm");    if (cka) cka.textContent = ap;
+    var ckd = $("ckDate");    if (ckd) ckd.textContent = longDate;
+    var ckc = $("ckTopClock");if (ckc) ckc.textContent = shortDate;
+    // Weather scene
+    var wsc = $("wsClock");   if (wsc) wsc.textContent = shortDate;
+  }
+
+  function renderWeatherScene() {
+    if (cfg.lat == null || cfg.lon == null) {
+      $("wsTemp").textContent = "—"; $("wsDesc").textContent = "Set your location";
+      $("wsIc").innerHTML = "☁"; $("wsMeta").textContent = ""; $("wsForecast").innerHTML = "";
+      $("wsLoc").textContent = "Open settings to set your location";
+      return;
+    }
+    var el = $("wsLoc");
+    if (el) el.textContent = "Watching " + cfg.radiusMi + " mi  ·  " +
+      cfg.lat.toFixed(3) + ", " + cfg.lon.toFixed(3);
+    if (!weather || !weather.current) {
+      $("wsTemp").textContent = "—"; $("wsDesc").textContent = "Weather loading…";
+      $("wsIc").innerHTML = "☁"; $("wsMeta").textContent = ""; $("wsForecast").innerHTML = "";
+      return;
+    }
+    var c = weather.current, u = cfg.temp === "c" ? "C" : "F";
+    $("wsTemp").textContent = Math.round(c.temperature_2m) + "°" + u;
+    var w = WMO[c.weather_code] || ["—", "☁"];
+    $("wsDesc").textContent = w[0]; $("wsIc").innerHTML = w[1];
+    var meta = [];
+    if (c.apparent_temperature != null) meta.push("Feels " + Math.round(c.apparent_temperature) + "°" + u);
+    meta.push("Wind " + Math.round(c.wind_speed_10m) + " mph");
+    if (c.relative_humidity_2m != null) meta.push("Humidity " + Math.round(c.relative_humidity_2m) + "%");
+    $("wsMeta").innerHTML = meta.join("&nbsp;&nbsp;·&nbsp;&nbsp;");
+    var dd = weather.daily, html = "";
+    if (dd && dd.time) {
+      for (var i = 0; i < Math.min(4, dd.time.length); i++) {
+        var dn = i === 0 ? "Today"
+          : new Date(dd.time[i] + "T00:00").toLocaleDateString(undefined, { weekday: "short" });
+        var wi = (WMO[dd.weather_code[i]] || ["", "☁"])[1];
+        html += '<div class="ws-fc">' +
+          '<div class="ws-fc-d">' + dn + '</div>' +
+          '<div class="ws-fc-i">' + wi + '</div>' +
+          '<div class="ws-fc-hi">' + Math.round(dd.temperature_2m_max[i]) + '°</div>' +
+          '<div class="ws-fc-lo">' + Math.round(dd.temperature_2m_min[i]) + '°</div>' +
+          '</div>';
+      }
+    }
+    $("wsForecast").innerHTML = html;
   }
 
   function renderMessage(text) {
@@ -2132,7 +2365,7 @@ body {
         }
       };
     }
-    renderWeather(); updateLoc(); show("idle");
+    renderWeather(); renderWeatherScene(); updateLoc(); show("idle");
     if (cfg.lat != null) { weatherAt = 0; wxTick(); }
   }
 
@@ -2285,6 +2518,7 @@ body {
 
   function cycle() {
     if (demo || cfg.lat == null || cfg.lon == null) return;
+    if (modeLocked) return;
     fetchAircraft().then(function (list) {
       noteSeen(list);
       var cands = buildCandidates(list);
@@ -2319,7 +2553,7 @@ body {
     if (cfg.lat == null) return;
     if (weather && Date.now() - weatherAt < 9 * 60 * 1000) return;
     fetchWeather().then(function (j) {
-      if (j) { weather = j; weatherAt = Date.now(); renderWeather(); }
+      if (j) { weather = j; weatherAt = Date.now(); renderWeather(); renderWeatherScene(); }
     });
   }
 
@@ -2368,6 +2602,7 @@ body {
     // refreshToken increment → soft-refresh aircraft + weather immediately
     if (s.refreshToken && s.refreshToken !== remoteLastRefreshToken) {
       remoteLastRefreshToken = s.refreshToken;
+      modeLocked = false;
       if (cfg.lat != null) { weatherAt = 0; wxTick(); cycle(); }
     }
 
@@ -2498,7 +2733,7 @@ body {
     cfg.dist     = $("inDist").value;
     cfg.temp     = $("inTemp").value;
     cfg.pin      = $("inPin").value.trim().toUpperCase();
-    demo = false; saveCfg(); closeCfg();
+    demo = false; modeLocked = false; saveCfg(); closeCfg();
     if (map) { try { map.remove(); } catch (e) {} map = null; planeMarker = null; runwayLayer = null; radiusCircle = null; }
     weather = null; weatherAt = 0; weatherFail = 0;
     $("liveTxt").textContent = "LIVE";
@@ -2508,15 +2743,15 @@ body {
   function updateLoc() {
     if (cfg.lat == null || cfg.lon == null) {
       $("locTxt").textContent = "Open settings to set your location";
-      var s = $("searching");
-      if (s) s.textContent = "Configure your location to start tracking aircraft";
+      var s = $("searching");   if (s)  s.textContent  = "Configure your location to start tracking aircraft";
+      var cs = $("ckSearching"); if (cs) cs.textContent = "Configure your location to start tracking aircraft";
       return;
     }
-    $("locTxt").textContent =
-      "Watching " + cfg.radiusMi + " mi  ·  " +
+    var locStr = "Watching " + cfg.radiusMi + " mi  ·  " +
       cfg.lat.toFixed(3) + ", " + cfg.lon.toFixed(3);
-    var s = $("searching");
-    if (s) s.textContent = "Actively searching for aircraft within " + cfg.radiusMi + " mi of you";
+    $("locTxt").textContent = locStr;
+    var s = $("searching");    if (s)  s.textContent  = "Actively searching for aircraft within " + cfg.radiusMi + " mi of you";
+    var cs = $("ckSearching"); if (cs) cs.textContent = "Actively searching within " + cfg.radiusMi + " mi";
   }
 
   // Hide cursor after 2.5 s inactivity (kiosk / ONN stick mode)
@@ -2537,7 +2772,7 @@ body {
 
   // Return to idle if no aircraft seen for ~22 s
   setInterval(function () {
-    if ($("flight").classList.contains("on") && !demo && Date.now() - lastSeen > 22000) {
+    if (!modeLocked && $("flight").classList.contains("on") && !demo && Date.now() - lastSeen > 22000) {
       show("idle");
     }
   }, 4000);

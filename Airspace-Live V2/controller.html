@@ -809,6 +809,7 @@ select option { background: #0a1428; }
         apiPost({ mode: "message", message: msg }, function(err, data) {
           if (err) { setStatus("stMessage", "err", err.message); return; }
           applyStateToUI(data.state);
+          inMessage.value = "";
           setStatus("stMessage", "ok", "Message is now showing on the screen.");
         });
         return;
