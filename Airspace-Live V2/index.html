@@ -1020,6 +1020,59 @@ body {
 }
 .cfg-welcome strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 3px; color: var(--txt); }
 .cfg-welcome span   { font-size: 13px; color: var(--muted); }
+
+/* ================================================================
+   MESSAGE SCENE — Build 12
+   ================================================================ */
+.message-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.4vmin;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+  padding: 4vmin 8vmin;
+  text-align: center;
+}
+.message-text {
+  font-size: clamp(22px, 5.8vmin, 80px);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  color: var(--txt);
+  text-shadow:
+    0 0 8vmin rgba(0,212,255,0.60),
+    0 0 3vmin rgba(0,212,255,0.35),
+    0 0 1vmin rgba(0,212,255,0.20);
+  max-width: 86vw;
+  word-break: break-word;
+  white-space: pre-wrap;
+  animation: neon-flicker 16s step-end infinite;
+}
+.message-sub {
+  font-size: 1.3vmin;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Remote status dot — tiny indicator inside build marker */
+#remoteDot {
+  display: inline-block;
+  width: 0.55vmin;
+  height: 0.55vmin;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 50%;
+  background: var(--dim);
+  vertical-align: middle;
+  margin-right: 0.6vmin;
+  transition: background 1s;
+}
 </style>
 </head>
 <body>
@@ -1163,10 +1216,23 @@ body {
     </div>
   </section>
 
+  <!-- ═══ MESSAGE SCENE ════════════════════════════════════════ -->
+  <section id="message" class="scene">
+    <div class="topbar">
+      <div class="bar-clock" id="mClock"></div>
+      <div class="bar-title">Airspace Live</div>
+      <div class="bar-right"></div>
+    </div>
+    <div class="message-inner">
+      <div class="message-text" id="messageText">—</div>
+      <div class="message-sub">Airspace Live Display</div>
+    </div>
+  </section>
+
 </div>
 
 <button id="gear" aria-label="Settings" title="Settings">&#9881;</button>
-<div id="ver">build&nbsp;8</div>
+<div id="ver"><span id="remoteDot" title="Remote controller"></span>build&nbsp;12</div>
 
 <div id="cfg">
   <div class="cfg-card">
@@ -1216,6 +1282,9 @@ body {
       Bake settings into the URL:
       <code>?lat=26.2026&amp;lon=-80.0939&amp;radius=5</code>
     </div>
+    <div style="font-size:11px;color:var(--dim);margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,212,255,0.09);">
+      Controller screen ID: <code id="remoteIdDisplay" style="color:var(--muted)">main-wall</code>
+    </div>
   </div>
 </div>
 
@@ -1228,10 +1297,12 @@ body {
   // ================================================================
 
   var $        = function (id) { return document.getElementById(id); };
-  var LS_CFG   = "airspace.cfg.v1";
-  var LS_SEEN  = "airspace.seen";
-  var LS_COUNT = "airspace.count";
-  var SS_TTL   = 12 * 60 * 60 * 1000;   // 12-hour session cache
+  var LS_CFG       = "airspace.cfg.v1";
+  var LS_SEEN      = "airspace.seen";
+  var LS_COUNT     = "airspace.count";
+  var LS_REMOTE_ID = "airspace.remote.screenId";
+  var LS_REMOTE_LU = "airspace.remote.lastUpdatedAt";
+  var SS_TTL       = 12 * 60 * 60 * 1000;   // 12-hour session cache
 
   var DEFAULT = { lat: null, lon: null, radiusMi: 5, dist: "mi", temp: "f", pin: "" };
 
@@ -1268,15 +1339,21 @@ body {
   // ================================================================
 
   var APP = {
-    mode:     "idle",     // "flight" | "idle" | "demo"
+    mode:     "idle",
     lat:      null,
     lon:      null,
     radiusMi: 5,
     dist:     "mi",
     temp:     "f",
     demo:     false,
-    message:  null
+    message:  ""
   };
+
+  // Remote controller state — loaded at boot
+  var remoteScreenId         = "main-wall";
+  var remoteLastUpdatedAt    = 0;
+  var remoteLastRefreshToken = 0;
+  var remoteAbortCtl         = null;
 
   var cfg = loadCfg();
 
@@ -1876,20 +1953,36 @@ body {
 
   function show(which) {
     APP.mode = which;
-    $("flight").classList.toggle("on", which === "flight");
-    $("idle").classList.toggle("on",   which === "idle");
-    // Re-validate map size whenever flight scene becomes visible
+    var isIdle = (which === "idle" || which === "weather" || which === "clock");
+    $("flight").classList.toggle("on",  which === "flight");
+    $("idle").classList.toggle("on",    isIdle);
+    $("message").classList.toggle("on", which === "message");
     if (which === "flight" && map) {
       setTimeout(function () { try { map.invalidateSize(); } catch (e) {} }, 80);
     }
   }
 
-  // External entry point for future phone controller.
-  // Switching modes: call setMode("idle"), setMode("demo"), etc.
+  // Phone controller entry point — called by remote polling and existing UI
   function setMode(mode) {
-    if (mode === "idle")  { demo = false; show("idle"); }
-    if (mode === "demo")  { demo = true;  runDemo(); }
-    // "flight" is handled automatically by cycle()
+    if (mode === "flight") {
+      demo = false;
+      lastSeen = Date.now(); // prevent immediate idle-timeout
+      if (cfg.lat != null) cycle();
+      else show("idle");
+    }
+    if (mode === "idle")    { demo = false; show("idle"); }
+    if (mode === "weather") { demo = false; show("weather"); }
+    if (mode === "clock")   { demo = false; show("clock"); }
+    if (mode === "message") {
+      var msg = (APP.message || "").trim();
+      if (!msg) return; // refuse to show empty message
+      demo = false;
+      renderMessage(msg);
+      show("message");
+    }
+    if (mode === "demo-flight") { demo = true; runDemo(); }
+    if (mode === "demo-idle")   { demo = true; runDemoIdle(); }
+    if (mode === "demo")        { demo = true; runDemo(); } // backward compat
   }
 
   // ================================================================
@@ -2003,10 +2096,44 @@ body {
     $("clkDate").textContent = d.toLocaleDateString(undefined, {
       weekday: "long", month: "long", day: "numeric"
     });
-    var f = $("fClock");
-    if (f) f.textContent = d.toLocaleDateString(undefined, {
+    var shortDate = d.toLocaleDateString(undefined, {
       weekday: "short", month: "short", day: "numeric"
     }) + "  ·  " + h12 + ":" + mm + " " + ap;
+    var f = $("fClock");
+    if (f) f.textContent = shortDate;
+    var mc = $("mClock");
+    if (mc) mc.textContent = shortDate;
+  }
+
+  function renderMessage(text) {
+    var el = $("messageText");
+    if (el) el.textContent = (text || "").trim() || "—";
+  }
+
+  // runDemoIdle — shared by btnIdle handler and remote setMode("demo-idle")
+  function runDemoIdle() {
+    demo = true;
+    if (!weather) {
+      var n   = new Date();
+      var iso = function (o) {
+        var x = new Date(n.getTime() + o * 864e5);
+        return x.getFullYear() + "-" +
+               ("0" + (x.getMonth() + 1)).slice(-2) + "-" +
+               ("0" + x.getDate()).slice(-2);
+      };
+      weather = {
+        current: { temperature_2m: 82, apparent_temperature: 88,
+                   weather_code: 2, wind_speed_10m: 8, relative_humidity_2m: 66 },
+        daily: {
+          time:               [iso(0), iso(1), iso(2)],
+          weather_code:       [2, 1, 80],
+          temperature_2m_max: [88, 90, 85],
+          temperature_2m_min: [76, 77, 75]
+        }
+      };
+    }
+    renderWeather(); updateLoc(); show("idle");
+    if (cfg.lat != null) { weatherAt = 0; wxTick(); }
   }
 
   function runDemo() {
@@ -2197,6 +2324,82 @@ body {
   }
 
   // ================================================================
+  // § REMOTE CONTROLLER — Build 12
+  // Polls /api/state every 3 s. Fail-silent: if the API is down
+  // the display keeps running on local settings without any change.
+  // ================================================================
+
+  function updateRemoteDot(online) {
+    var dot = $("remoteDot");
+    if (dot) dot.style.background = online
+      ? "var(--green)"
+      : "rgba(255,60,60,0.45)";
+  }
+
+  function applyRemoteState(s) {
+    // Detect location change before overwriting cfg
+    var locChanged = (
+      (s.lat  != null && s.lat  !== cfg.lat) ||
+      (s.lon  != null && s.lon  !== cfg.lon)
+    );
+
+    // Merge settings into cfg
+    var cfgChanged = false;
+    if (s.lat      != null && s.lat      !== cfg.lat)      { cfg.lat      = s.lat;      cfgChanged = true; }
+    if (s.lon      != null && s.lon      !== cfg.lon)      { cfg.lon      = s.lon;      cfgChanged = true; }
+    if (s.radiusMi != null && s.radiusMi !== cfg.radiusMi) { cfg.radiusMi = s.radiusMi; cfgChanged = true; }
+    if (s.dist && s.dist !== cfg.dist) { cfg.dist = s.dist; cfgChanged = true; }
+    if (s.temp && s.temp !== cfg.temp) { cfg.temp = s.temp; cfgChanged = true; }
+    if (cfgChanged) { saveCfg(); updateLoc(); }
+
+    // Reset map + weather when location changes
+    if (locChanged) {
+      if (map) {
+        try { map.remove(); } catch (e) {}
+        map = null; planeMarker = null;
+        secondaryMarkers = []; runwayLayer = null; radiusCircle = null;
+      }
+      weather = null; weatherAt = 0; weatherFail = 0;
+    }
+
+    // Message field
+    if (s.message !== undefined) APP.message = s.message;
+
+    // refreshToken increment → soft-refresh aircraft + weather immediately
+    if (s.refreshToken && s.refreshToken !== remoteLastRefreshToken) {
+      remoteLastRefreshToken = s.refreshToken;
+      if (cfg.lat != null) { weatherAt = 0; wxTick(); cycle(); }
+    }
+
+    // Mode switch — always last so settings are applied first
+    if (s.mode) setMode(s.mode);
+  }
+
+  function pollRemoteState() {
+    if (remoteAbortCtl) { try { remoteAbortCtl.abort(); } catch (e) {} }
+    remoteAbortCtl = new AbortController();
+    var ctl = remoteAbortCtl;
+    var tid = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 5000);
+    fetch("/api/state?screenId=" + encodeURIComponent(remoteScreenId), { signal: ctl.signal })
+      .then(function (r) {
+        clearTimeout(tid);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (s) {
+        updateRemoteDot(true);
+        if (!s || !s.updatedAt) return;
+        if (s.updatedAt <= remoteLastUpdatedAt) return; // nothing changed
+        remoteLastUpdatedAt = s.updatedAt;
+        try { localStorage.setItem(LS_REMOTE_LU, String(remoteLastUpdatedAt)); } catch (e) {}
+        applyRemoteState(s);
+      })
+      .catch(function () {
+        updateRemoteDot(false); // keep the display running — silent failure
+      });
+  }
+
+  // ================================================================
   // § SETTINGS CONTROLS
   // ================================================================
 
@@ -2276,30 +2479,7 @@ body {
 
   $("btnDemo").onclick = function () { demo = true; closeCfg(); runDemo(); };
 
-  $("btnIdle").onclick = function () {
-    demo = true; closeCfg();
-    if (!weather) {
-      var n   = new Date();
-      var iso = function (o) {
-        var x = new Date(n.getTime() + o * 864e5);
-        return x.getFullYear() + "-" +
-               ("0" + (x.getMonth() + 1)).slice(-2) + "-" +
-               ("0" + x.getDate()).slice(-2);
-      };
-      weather = {
-        current: { temperature_2m: 82, apparent_temperature: 88,
-                   weather_code: 2, wind_speed_10m: 8, relative_humidity_2m: 66 },
-        daily: {
-          time:                [iso(0), iso(1), iso(2)],
-          weather_code:        [2, 1, 80],
-          temperature_2m_max:  [88, 90, 85],
-          temperature_2m_min:  [76, 77, 75]
-        }
-      };
-    }
-    renderWeather(); updateLoc(); show("idle");
-    if (cfg.lat != null) { weatherAt = 0; wxTick(); }
-  };
+  $("btnIdle").onclick = function () { runDemoIdle(); closeCfg(); };
 
   $("btnSave").onclick = function () {
     var la = parseFloat($("inLat").value), lo = parseFloat($("inLon").value);
@@ -2374,6 +2554,17 @@ body {
 
   setInterval(cycle, 8000);
   setInterval(wxTick, 60000);
+
+  // ── Remote controller boot — Build 12 ──────────────────────────
+  // Read persisted remote screen ID and last-seen updatedAt
+  try { remoteScreenId = localStorage.getItem(LS_REMOTE_ID) || "main-wall"; } catch (e) {}
+  try { remoteLastUpdatedAt = parseInt(localStorage.getItem(LS_REMOTE_LU) || "0", 10) || 0; } catch (e) {}
+  // Ensure the key is saved so the controller can read it from the settings modal
+  try { if (!localStorage.getItem(LS_REMOTE_ID)) localStorage.setItem(LS_REMOTE_ID, remoteScreenId); } catch (e) {}
+  // Show screen ID in the gear settings modal
+  if ($("remoteIdDisplay")) $("remoteIdDisplay").textContent = remoteScreenId;
+  // Start polling — lightweight GET every 3 s, fails silently if API unavailable
+  setInterval(pollRemoteState, 3000);
 
 })();
 </script>
