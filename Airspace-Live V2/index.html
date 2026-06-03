@@ -1154,6 +1154,156 @@ body {
 }
 
 /* ================================================================
+   AIRCRAFT INTEL PANEL
+   ================================================================ */
+.ac-intel {
+  flex-shrink: 0;
+  position: relative;
+  width: 100%;
+  margin: 1.4vmin 0 1vmin;
+  padding: 1.5vmin 2vmin 1.4vmin;
+  border-radius: 4px;
+  background: rgba(2,5,18,0.76);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 0 3vmin rgba(0,212,255,0.22),
+    0 0 8vmin rgba(0,212,255,0.08),
+    inset 0 0 2vmin rgba(0,0,0,0.45);
+  overflow: hidden;
+}
+.ac-intel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--accent) 0%, rgba(0,212,255,0.50) 45%, transparent 100%);
+  z-index: 2;
+  box-shadow: 0 0 4px rgba(0,212,255,0.9), 0 0 10px rgba(0,212,255,0.3);
+}
+.ac-intel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 3px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+.ac-intel-corner {
+  position: absolute;
+  width: 2.4vmin; height: 2.4vmin;
+  z-index: 3; pointer-events: none;
+}
+.ac-intel-corner.tl { top: 0; left: 0;
+  border-top: 2px solid var(--accent); border-left: 2px solid var(--accent);
+  filter: drop-shadow(0 0 0.5vmin var(--accent));
+}
+.ac-intel-corner.br { bottom: 0; right: 0;
+  border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent);
+  filter: drop-shadow(0 0 0.5vmin var(--accent));
+}
+.ac-intel-hd {
+  display: flex;
+  align-items: center;
+  gap: 1.2vmin;
+  margin-bottom: 1.2vmin;
+  position: relative;
+  z-index: 2;
+}
+.ac-intel-hd-label {
+  font-size: 0.9vmin;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  flex-shrink: 0;
+  text-shadow: 0 0 1.2vmin rgba(0,212,255,0.6);
+}
+.ac-intel-hd-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(0,212,255,0.30), transparent);
+}
+.ac-intel-sil {
+  font-size: 2.6vmin;
+  line-height: 1;
+  color: var(--accent);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 1vmin var(--accent));
+  opacity: 0.65;
+  transition: transform 0.9s ease;
+}
+.ac-intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9vmin 2.2vmin;
+  position: relative;
+  z-index: 2;
+}
+.ac-intel-key {
+  font-size: 0.82vmin;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.3vmin;
+}
+.ac-intel-val {
+  font-size: 1.45vmin;
+  font-weight: 600;
+  color: var(--txt);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+.ac-intel-val.hi    { color: var(--accent); }
+.ac-intel-val.green { color: var(--green); }
+.ac-intel-val.dim   { color: var(--muted); }
+.ac-intel-status-dot {
+  display: inline-block;
+  width: 0.6vmin; height: 0.6vmin;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 1.2vmin var(--green);
+  vertical-align: middle;
+  margin-right: 0.5vmin;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.ac-intel-div {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,212,255,0.16), transparent);
+  margin: 0.2vmin 0;
+}
+.ac-intel-conf-bar {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.3vmin;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  margin-right: 0.5vmin;
+}
+@keyframes intel-scan {
+  0%   { top: 0%;    opacity: 0; }
+  6%   { opacity: 1; }
+  94%  { opacity: 1; }
+  100% { top: 100%;  opacity: 0; }
+}
+.ac-intel-scan {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(0,212,255,0.45) 25%,
+    rgba(0,212,255,0.70) 50%, rgba(0,212,255,0.45) 75%, transparent 100%);
+  z-index: 3;
+  pointer-events: none;
+  animation: intel-scan 7s linear infinite;
+  box-shadow: 0 0 3px rgba(0,212,255,0.6);
+}
+
+/* ================================================================
    MESSAGE SCENE — Build 12
    ================================================================ */
 .message-inner {
@@ -1267,6 +1417,45 @@ body {
           <div class="type-facts">
             <div class="type-title" id="typeTitle">—</div>
             <div class="type-specs" id="typeSpecs"></div>
+          </div>
+        </div>
+
+        <!-- Aircraft Intel Panel -->
+        <div class="ac-intel" id="acIntel">
+          <div class="ac-intel-corner tl"></div>
+          <div class="ac-intel-corner br"></div>
+          <div class="ac-intel-scan"></div>
+          <div class="ac-intel-hd">
+            <span class="ac-intel-hd-label">&#9672; Aircraft Intel</span>
+            <span class="ac-intel-hd-line"></span>
+            <span class="ac-intel-sil" id="intelSil">&#9992;</span>
+          </div>
+          <div class="ac-intel-grid">
+            <div>
+              <div class="ac-intel-key">Classification</div>
+              <div class="ac-intel-val" id="intelClass">—</div>
+            </div>
+            <div>
+              <div class="ac-intel-key">Role</div>
+              <div class="ac-intel-val" id="intelRole">—</div>
+            </div>
+            <div class="ac-intel-div"></div>
+            <div>
+              <div class="ac-intel-key">Tracking Status</div>
+              <div class="ac-intel-val green" id="intelStatus">—</div>
+            </div>
+            <div>
+              <div class="ac-intel-key">Last Update</div>
+              <div class="ac-intel-val hi" id="intelTime">—</div>
+            </div>
+            <div>
+              <div class="ac-intel-key">Data Confidence</div>
+              <div class="ac-intel-val" id="intelConf">—</div>
+            </div>
+            <div>
+              <div class="ac-intel-key">Manufacturer</div>
+              <div class="ac-intel-val dim" id="intelMfr">—</div>
+            </div>
           </div>
         </div>
 
@@ -2206,6 +2395,7 @@ body {
     $("acReg").textContent = (info && info.registration) || ac.r || "—";
     setDist(ac, distKm);
     ensureMap(); updateMap(ac, lastCands);
+    renderIntelPanel(ac, info, route);
     show("flight");
   }
 
@@ -2234,6 +2424,7 @@ body {
     $("acReg").textContent = (info && info.registration) || ac.r || "—";
     setDist(ac, distKm);
     ensureMap(); updateMap(ac, lastCands);
+    renderIntelPanel(ac, info, null);
     show("flight");
   }
 
@@ -2295,6 +2486,72 @@ body {
     var ckc = $("ckTopClock");if (ckc) ckc.textContent = shortDate;
     // Weather scene
     var wsc = $("wsClock");   if (wsc) wsc.textContent = shortDate;
+  }
+
+  // ================================================================
+  // § AIRCRAFT INTEL PANEL
+  // Renders a cyberpunk dossier panel using data already available
+  // from the ADS-B feed and enrichment APIs. No external fetches.
+  // ================================================================
+
+  function renderIntelPanel(ac, info, route) {
+    var t   = ((info && (info.icao_type || info.type)) || ac.t || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    var cls = planeClass(t, (ac.category || "").toUpperCase());
+    var cs  = (ac.flight || "").trim().toUpperCase();
+
+    var isCargoFlight = /^(UPS|FDX|ABX|GTI|POL|CLX|DHK|KMF|TAY|MPH|ATN|GHY|FDL)/.test(cs);
+    var isComm        = isAirline(cs);
+
+    var classMap = {
+      wide4:"Commercial · Heavy", wide2:"Commercial · Wide-body",
+      narrow:"Commercial · Narrow-body", regional:"Commercial · Regional",
+      turbo:"Regional Aviation", light:"General Aviation", heli:"Rotary Wing"
+    };
+    var classification = isCargoFlight ? "Cargo Aviation" : (classMap[cls] || "Aviation");
+
+    var roleMap = {
+      wide4:"Long-Haul Passenger", wide2:"Long-Haul Passenger",
+      narrow:"Short / Medium Passenger", regional:"Regional Passenger",
+      turbo:"Regional Transport", light:"Private / Training", heli:"Rotary Operations"
+    };
+    var role = isCargoFlight ? "Cargo Transport"
+             : (!isComm && cls !== "heli") ? "Private / General"
+             : (roleMap[cls] || "Air Transport");
+
+    var sil = $("intelSil");
+    if (sil && ac.track != null) {
+      sil.style.transform = "rotate(" + Math.round(ac.track - 45) + "deg)";
+    }
+
+    var hasPos = (ac.lat != null && ac.lon != null);
+    var status = hasPos
+      ? '<span class="ac-intel-status-dot"></span>Currently Tracking'
+      : '<span class="ac-intel-status-dot" style="background:var(--muted);box-shadow:none"></span>Signal Limited';
+
+    var d = new Date(), h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+    var timeStr = (h % 12 || 12) + ":" + (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s) + " " + (h >= 12 ? "PM" : "AM");
+
+    var hasReg   = !!(info && info.registration);
+    var hasRoute = !!(route && (route.origin || route.destination));
+    var hasType  = !!t;
+    var score    = (hasReg ? 2 : 0) + (hasRoute ? 1 : 0) + (hasType ? 1 : 0);
+    var confBar, confLabel;
+    if      (score >= 4) { confBar = "\u2588\u2588\u2588\u2588"; confLabel = "High"; }
+    else if (score >= 2) { confBar = "\u2588\u2588\u2591\u2591"; confLabel = "Medium"; }
+    else if (score >= 1) { confBar = "\u2588\u2591\u2591\u2591"; confLabel = "Low"; }
+    else                 { confBar = "\u2591\u2591\u2591\u2591"; confLabel = "Unknown"; }
+
+    var mfr = (info && info.manufacturer) || "";
+    if (!mfr && t) { var mo = resolveManufacturer(info, t); mfr = mo ? mo.name : ""; }
+
+    var tx = function (id, v) { var e = $(id); if (e) e.textContent = v; };
+    tx("intelClass", classification);
+    tx("intelRole",  role);
+    tx("intelTime",  timeStr);
+    tx("intelMfr",   mfr || "\u2014");
+    var si = $("intelStatus"); if (si) si.innerHTML = status;
+    var ce = $("intelConf");
+    if (ce) ce.innerHTML = '<span class="ac-intel-conf-bar">' + confBar + '</span>' + confLabel;
   }
 
   function renderWeatherScene() {
